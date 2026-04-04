@@ -26,6 +26,30 @@ function formatLoadedCount(totalCount: number | null, loadedCount: number) {
   return `${loadedCount}/${totalCount}`;
 }
 
+function SearchSummary({ state }: { state: AddressComplaintsState }) {
+  if (state.status !== 'ready' || state.complaints.length === 0) {
+    return null;
+  }
+
+  return (
+    <View className="flex-row gap-4">
+      <View className="flex-1 rounded-3xl bg-cyan-400 px-5 py-5">
+        <Text className="text-xs font-semibold uppercase tracking-[2px] text-slate-950">Showing</Text>
+        <Text testID="complaint-count" className="mt-3 text-3xl font-bold text-slate-950">
+          {formatLoadedCount(state.totalCount, state.complaints.length)}
+        </Text>
+        <Text className="mt-2 text-xs font-medium text-slate-900/80">First page of nearby matches</Text>
+      </View>
+
+      <View className="flex-1 rounded-3xl border border-slate-700 bg-slate-900 px-5 py-5">
+        <Text className="text-xs font-semibold uppercase tracking-[2px] text-slate-400">Search window</Text>
+        <Text className="mt-3 text-3xl font-bold text-white">7d</Text>
+        <Text className="mt-2 text-xs font-medium text-slate-500">Half-mile radius</Text>
+      </View>
+    </View>
+  );
+}
+
 function ComplaintCard({ complaint }: { complaint: Complaint }) {
   return (
     <View className="gap-3 rounded-3xl border border-slate-800 bg-slate-900 px-5 py-5">
@@ -61,6 +85,18 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
 }
 
 function HomeScreenBody({ state }: { state: AddressComplaintsState }) {
+  if (state.status === 'idle') {
+    return (
+      <View className="gap-3 rounded-[28px] border border-slate-800 bg-slate-900 px-6 py-6">
+        <Text className="text-xl font-semibold text-white">Start with one Chicago address.</Text>
+        <Text className="text-base leading-6 text-slate-300">
+          Enter a street address above to see the first page of complaints filed within half a mile in
+          the last 7 days.
+        </Text>
+      </View>
+    );
+  }
+
   if (state.status === 'error') {
     return (
       <View className="gap-4 rounded-[28px] border border-rose-500/30 bg-rose-500/10 px-6 py-6">
@@ -95,8 +131,8 @@ function HomeScreenBody({ state }: { state: AddressComplaintsState }) {
       <View className="gap-4 rounded-[28px] border border-slate-800 bg-slate-900 px-6 py-6">
         <Text className="text-2xl font-semibold text-white">Nothing nearby in the last 7 days.</Text>
         <Text className="text-base leading-6 text-slate-300">
-          That may mean a quiet pocket, sparse geocoding nearby, or a simulator location outside the
-          city dataset.
+          Try a busier nearby intersection or another neighborhood to quickly compare what residents
+          are reporting.
         </Text>
         <Pressable
           accessibilityRole="button"
@@ -127,24 +163,28 @@ export function HomeScreenContent({ state }: { state: AddressComplaintsState }) 
   const subtitle = state.coordinates
     ? `Around ${state.coordinates.latitude.toFixed(3)}, ${state.coordinates.longitude.toFixed(3)}`
     : 'Search by a Chicago address';
+  const hasResults = state.status === 'ready' && state.complaints.length > 0;
 
   return (
     <SafeAreaView className="flex-1 bg-slate-950">
       <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 py-8">
-        <View className="gap-3 rounded-[28px] border border-slate-800 bg-slate-900 px-6 py-6">
+        <View className="gap-3 rounded-[28px] bg-slate-950 px-1 py-2">
           <Text className="text-sm font-medium uppercase tracking-[3px] text-cyan-300">
             311 Watch
           </Text>
           <Text className="text-4xl font-bold text-white">What are neighbors complaining about?</Text>
           <Text className="text-base leading-6 text-slate-300">
-            Anonymous public data, one minimal flow: enter a Chicago address, pull recent nearby
-            complaints, and see the signal before building anything heavier.
+            Enter one Chicago address to see recent nearby 311 complaints without accounts, maps, or
+            extra setup.
           </Text>
           <Text className="text-sm font-medium text-slate-500">{subtitle}</Text>
         </View>
 
-        <View className="gap-3 rounded-3xl border border-slate-800 bg-slate-900 px-5 py-5">
-          <Text className="text-sm font-medium text-slate-400">Chicago address</Text>
+        <View className="gap-4 rounded-[28px] border border-slate-800 bg-slate-900 px-5 py-5">
+          <View className="gap-1">
+            <Text className="text-sm font-medium text-slate-400">Chicago address</Text>
+            <Text className="text-base text-white">Search complaints around an address you know.</Text>
+          </View>
           <TextInput
             value={state.query}
             onChangeText={state.setQuery}
@@ -160,35 +200,14 @@ export function HomeScreenContent({ state }: { state: AddressComplaintsState }) 
             onPress={state.search}>
             <Text className="text-base font-semibold text-slate-950">Search this address</Text>
           </Pressable>
+          {!hasResults ? (
+            <Text className="text-sm leading-6 text-slate-500">
+              Uses public Chicago 311 data from the last 7 days within half a mile of the address.
+            </Text>
+          ) : null}
         </View>
 
-        <View className="flex-row gap-4">
-          <View className="flex-1 rounded-3xl bg-cyan-400 px-5 py-5">
-            <Text className="text-xs font-semibold uppercase tracking-[2px] text-slate-950">
-              Showing
-            </Text>
-            <Text testID="complaint-count" className="mt-3 text-3xl font-bold text-slate-950">
-              {formatLoadedCount(state.totalCount, state.complaints.length)}
-            </Text>
-            <Text className="mt-2 text-xs font-medium text-slate-900/80">First page of nearby matches</Text>
-          </View>
-
-          <View className="flex-1 rounded-3xl border border-slate-700 bg-slate-900 px-5 py-5">
-            <Text className="text-xs font-semibold uppercase tracking-[2px] text-slate-400">
-              Time window
-            </Text>
-            <Text className="mt-3 text-3xl font-bold text-white">7d</Text>
-          </View>
-        </View>
-
-        <View className="gap-3 rounded-3xl border border-slate-800 bg-slate-900 px-5 py-5">
-          <Text className="text-sm font-medium text-slate-400">Default policy</Text>
-          <Text className="text-2xl font-semibold text-white">Keep it tiny and useful.</Text>
-          <Text className="text-sm leading-6 text-slate-400">
-            This feed is address-centered to half a mile, spans 7 days, excludes duplicates, and
-            filters out `311 INFORMATION ONLY CALL` so the first dogfood pass stays readable.
-          </Text>
-        </View>
+        <SearchSummary state={state} />
 
         <HomeScreenBody state={state} />
       </ScrollView>

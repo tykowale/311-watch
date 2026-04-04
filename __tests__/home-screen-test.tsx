@@ -33,11 +33,23 @@ function createState(overrides?: Partial<AddressComplaintsState>): AddressCompla
 }
 
 describe('<HomeScreenContent />', () => {
-  test('renders a complaint-first dogfood screen', () => {
+  test('renders a tighter landing screen before search runs', () => {
+    const { getByText, queryByTestId } = render(
+      <HomeScreenContent
+        state={createState({ status: 'idle', complaints: [], totalCount: null, coordinates: null })}
+      />
+    );
+
+    getByText('Search complaints around an address you know.');
+    getByText('Start with one Chicago address.');
+    expect(queryByTestId('complaint-count')).toBeNull();
+  });
+
+  test('renders result summary only after complaints load', () => {
     const { getByText, getByTestId } = render(<HomeScreenContent state={createState()} />);
 
     getByText('What are neighbors complaining about?');
-    getByText('Search this address');
+    getByText('Search complaints around an address you know.');
     getByText('Pothole in Street Complaint');
     expect(getByTestId('complaint-count').props.children).toBe('1/42');
     getByText('First page of nearby matches');
