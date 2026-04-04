@@ -1,9 +1,9 @@
-import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Complaint } from '@/lib/chicago311/types';
 
-import { useNearbyComplaints, type NearbyComplaintsState } from '@/features/complaints/use-nearby-complaints';
+import { useAddressComplaints, type AddressComplaintsState } from '@/features/complaints/use-address-complaints';
 
 function formatComplaintDate(createdAt: string) {
   return new Date(createdAt).toLocaleString(undefined, {
@@ -48,25 +48,7 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
   );
 }
 
-function HomeScreenBody({ state }: { state: NearbyComplaintsState }) {
-  if (state.status === 'permission-denied') {
-    return (
-      <View className="gap-4 rounded-[28px] border border-amber-500/30 bg-amber-500/10 px-6 py-6">
-        <Text className="text-2xl font-semibold text-white">Use your location to dogfood this.</Text>
-        <Text className="text-base leading-6 text-slate-300">
-          The first flow stays intentionally small: recent complaints within walking distance of where
-          you are.
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          className="items-center rounded-2xl bg-amber-400 px-4 py-4"
-          onPress={state.requestLocationAccess}>
-          <Text className="text-base font-semibold text-slate-950">Enable location</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
+function HomeScreenBody({ state }: { state: AddressComplaintsState }) {
   if (state.status === 'error') {
     return (
       <View className="gap-4 rounded-[28px] border border-rose-500/30 bg-rose-500/10 px-6 py-6">
@@ -77,8 +59,8 @@ function HomeScreenBody({ state }: { state: NearbyComplaintsState }) {
         <Pressable
           accessibilityRole="button"
           className="items-center rounded-2xl bg-white px-4 py-4"
-          onPress={state.refresh}>
-          <Text className="text-base font-semibold text-slate-950">Try again</Text>
+          onPress={state.search}>
+          <Text className="text-base font-semibold text-slate-950">Search again</Text>
         </Pressable>
       </View>
     );
@@ -89,7 +71,8 @@ function HomeScreenBody({ state }: { state: NearbyComplaintsState }) {
       <View className="gap-4 rounded-[28px] border border-slate-800 bg-slate-900 px-6 py-6">
         <Text className="text-2xl font-semibold text-white">Loading nearby complaints...</Text>
         <Text className="text-base leading-6 text-slate-300">
-          Fetching the last 7 days of public Chicago 311 reports near your current location.
+          Geocoding your address, then fetching the last 7 days of public Chicago 311 reports within
+          half a mile.
         </Text>
       </View>
     );
@@ -100,14 +83,14 @@ function HomeScreenBody({ state }: { state: NearbyComplaintsState }) {
       <View className="gap-4 rounded-[28px] border border-slate-800 bg-slate-900 px-6 py-6">
         <Text className="text-2xl font-semibold text-white">Nothing nearby in the last 7 days.</Text>
         <Text className="text-base leading-6 text-slate-300">
-          That may mean a quiet pocket, a sparse geocoding area, or just a good excuse to widen the
-          radius next.
+          That may mean a quiet pocket, sparse geocoding nearby, or a simulator location outside the
+          city dataset.
         </Text>
         <Pressable
           accessibilityRole="button"
           className="items-center rounded-2xl bg-cyan-400 px-4 py-4"
-          onPress={state.refresh}>
-          <Text className="text-base font-semibold text-slate-950">Refresh nearby</Text>
+          onPress={state.search}>
+          <Text className="text-base font-semibold text-slate-950">Try another search</Text>
         </Pressable>
       </View>
     );
@@ -123,33 +106,48 @@ function HomeScreenBody({ state }: { state: NearbyComplaintsState }) {
 }
 
 export function HomeScreen() {
-  const state = useNearbyComplaints();
+  const state = useAddressComplaints();
 
   return <HomeScreenContent state={state} />;
 }
 
-export function HomeScreenContent({ state }: { state: NearbyComplaintsState }) {
+export function HomeScreenContent({ state }: { state: AddressComplaintsState }) {
   const subtitle = state.coordinates
     ? `Around ${state.coordinates.latitude.toFixed(3)}, ${state.coordinates.longitude.toFixed(3)}`
-    : 'Recent nearby Chicago 311 complaints';
-  const isRefreshing = state.status === 'loading' && state.complaints.length > 0;
+    : 'Search by a Chicago address';
 
   return (
     <SafeAreaView className="flex-1 bg-slate-950">
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="gap-6 px-6 py-8"
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={state.refresh} />}>
+      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 py-8">
         <View className="gap-3 rounded-[28px] border border-slate-800 bg-slate-900 px-6 py-6">
           <Text className="text-sm font-medium uppercase tracking-[3px] text-cyan-300">
             311 Watch
           </Text>
           <Text className="text-4xl font-bold text-white">What are neighbors complaining about?</Text>
           <Text className="text-base leading-6 text-slate-300">
-            Anonymous public data, one minimal flow: use your location, pull recent complaints, and
-            see the signal before building anything heavier.
+            Anonymous public data, one minimal flow: enter a Chicago address, pull recent nearby
+            complaints, and see the signal before building anything heavier.
           </Text>
           <Text className="text-sm font-medium text-slate-500">{subtitle}</Text>
+        </View>
+
+        <View className="gap-3 rounded-3xl border border-slate-800 bg-slate-900 px-5 py-5">
+          <Text className="text-sm font-medium text-slate-400">Chicago address</Text>
+          <TextInput
+            value={state.query}
+            onChangeText={state.setQuery}
+            placeholder="1 E State St"
+            placeholderTextColor="#64748b"
+            autoCapitalize="words"
+            autoCorrect={false}
+            className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-4 text-base text-white"
+          />
+          <Pressable
+            accessibilityRole="button"
+            className="items-center rounded-2xl bg-cyan-400 px-4 py-4"
+            onPress={state.search}>
+            <Text className="text-base font-semibold text-slate-950">Search this address</Text>
+          </Pressable>
         </View>
 
         <View className="flex-row gap-4">
@@ -174,21 +172,12 @@ export function HomeScreenContent({ state }: { state: NearbyComplaintsState }) {
           <Text className="text-sm font-medium text-slate-400">Default policy</Text>
           <Text className="text-2xl font-semibold text-white">Keep it tiny and useful.</Text>
           <Text className="text-sm leading-6 text-slate-400">
-            This feed is location-bounded, excludes duplicates, and filters out `311 INFORMATION ONLY
-            CALL` so the first dogfood pass stays readable.
+            This feed is address-centered to half a mile, spans 7 days, excludes duplicates, and
+            filters out `311 INFORMATION ONLY CALL` so the first dogfood pass stays readable.
           </Text>
         </View>
 
         <HomeScreenBody state={state} />
-
-        <View className="gap-3">
-          <Pressable
-            accessibilityRole="button"
-            className="items-center rounded-2xl bg-cyan-400 px-4 py-4"
-            onPress={state.refresh}>
-            <Text className="text-base font-semibold text-slate-950">Refresh nearby complaints</Text>
-          </Pressable>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );

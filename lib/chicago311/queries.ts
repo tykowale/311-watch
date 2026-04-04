@@ -5,7 +5,7 @@ const DEFAULT_BASE_URL = 'https://data.cityofchicago.org/resource/v6vf-nfxy.json
 function formatIsoDate(daysBack: number, now: Date) {
   const date = new Date(now);
   date.setUTCDate(date.getUTCDate() - daysBack);
-  return date.toISOString();
+  return date.toISOString().replace('Z', '');
 }
 
 export function buildRecentNearbyComplaintsUrl(

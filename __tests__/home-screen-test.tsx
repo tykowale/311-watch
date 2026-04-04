@@ -1,10 +1,12 @@
 import { fireEvent, render } from '@testing-library/react-native';
 
 import { HomeScreenContent } from '@/components/home-screen';
-import type { NearbyComplaintsState } from '@/features/complaints/use-nearby-complaints';
+import type { AddressComplaintsState } from '@/features/complaints/use-address-complaints';
 
-function createState(overrides?: Partial<NearbyComplaintsState>): NearbyComplaintsState {
+function createState(overrides?: Partial<AddressComplaintsState>): AddressComplaintsState {
   return {
+    query: '1 E State St',
+    setQuery: jest.fn(),
     status: 'ready',
     complaints: [
       {
@@ -24,8 +26,7 @@ function createState(overrides?: Partial<NearbyComplaintsState>): NearbyComplain
       latitude: 41.881,
       longitude: -87.63,
     },
-    refresh: jest.fn(),
-    requestLocationAccess: jest.fn(),
+    search: jest.fn(),
     ...overrides,
   };
 }
@@ -35,20 +36,24 @@ describe('<HomeScreenContent />', () => {
     const { getByText, getByTestId } = render(<HomeScreenContent state={createState()} />);
 
     getByText('What are neighbors complaining about?');
+    getByText('Search this address');
     getByText('Pothole in Street Complaint');
     expect(getByTestId('complaint-count').props.children).toBe(1);
   });
 
-  test('allows retrying when location permission is missing', () => {
+  test('lets the user search by address', () => {
     const state = createState({
-      status: 'permission-denied',
+      status: 'idle',
       complaints: [],
       coordinates: null,
     });
 
-    const { getByText } = render(<HomeScreenContent state={state} />);
+    const { getByDisplayValue, getByText } = render(<HomeScreenContent state={state} />);
 
-    fireEvent.press(getByText('Enable location'));
-    expect(state.requestLocationAccess).toHaveBeenCalled();
+    fireEvent.changeText(getByDisplayValue('1 E State St'), '1234 W Foster Ave');
+    fireEvent.press(getByText('Search this address'));
+
+    expect(state.setQuery).toHaveBeenCalledWith('1234 W Foster Ave');
+    expect(state.search).toHaveBeenCalled();
   });
 });

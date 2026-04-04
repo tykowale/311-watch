@@ -22,7 +22,7 @@ describe('Chicago 311 client', () => {
     expect(url).toContain('duplicate+%3D+false');
     expect(url).toContain('sr_type+%21%3D+%27311+INFORMATION+ONLY+CALL%27');
     expect(url).toContain('within_circle%28location%2C+41.88%2C+-87.63%2C+800%29');
-    expect(url).toContain('created_date+%3E%3D+%272026-03-29T00%3A00%3A00.000Z%27');
+    expect(url).toContain('created_date+%3E%3D+%272026-03-29T00%3A00%3A00.000%27');
   });
 
   test('normalizes a Socrata row into an app complaint', () => {
