@@ -36,6 +36,12 @@ export type Complaint = {
   ward: string | null;
 };
 
+export type NearbyComplaintsPage = {
+  complaints: Complaint[];
+  totalCount: number;
+};
+
 export type Chicago311Client = {
   getRecentNearbyComplaints: (params: NearbyComplaintsParams) => Promise<Complaint[]>;
+  getRecentNearbyComplaintsPage: (params: NearbyComplaintsParams) => Promise<NearbyComplaintsPage>;
 };

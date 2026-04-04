@@ -14,6 +14,18 @@ function formatComplaintDate(createdAt: string) {
   });
 }
 
+function formatLoadedCount(totalCount: number | null, loadedCount: number) {
+  if (totalCount === null) {
+    return String(loadedCount);
+  }
+
+  if (totalCount <= loadedCount) {
+    return String(totalCount);
+  }
+
+  return `${loadedCount}/${totalCount}`;
+}
+
 function ComplaintCard({ complaint }: { complaint: Complaint }) {
   return (
     <View className="gap-3 rounded-3xl border border-slate-800 bg-slate-900 px-5 py-5">
@@ -153,11 +165,12 @@ export function HomeScreenContent({ state }: { state: AddressComplaintsState }) 
         <View className="flex-row gap-4">
           <View className="flex-1 rounded-3xl bg-cyan-400 px-5 py-5">
             <Text className="text-xs font-semibold uppercase tracking-[2px] text-slate-950">
-              Complaints loaded
+              Showing
             </Text>
             <Text testID="complaint-count" className="mt-3 text-3xl font-bold text-slate-950">
-              {state.complaints.length}
+              {formatLoadedCount(state.totalCount, state.complaints.length)}
             </Text>
+            <Text className="mt-2 text-xs font-medium text-slate-900/80">First page of nearby matches</Text>
           </View>
 
           <View className="flex-1 rounded-3xl border border-slate-700 bg-slate-900 px-5 py-5">

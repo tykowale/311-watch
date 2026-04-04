@@ -8,14 +8,27 @@ function formatIsoDate(daysBack: number, now: Date) {
   return date.toISOString().replace('Z', '');
 }
 
+function buildNearbyComplaintsWhereClause(params: NearbyComplaintsParams, now: Date) {
+  const { latitude, longitude, radiusMeters, daysBack } = params;
+  const createdAfter = formatIsoDate(daysBack, now);
+
+  return [
+    'duplicate = false',
+    'latitude IS NOT NULL',
+    'longitude IS NOT NULL',
+    "sr_type != '311 INFORMATION ONLY CALL'",
+    `created_date >= '${createdAfter}'`,
+    `within_circle(location, ${latitude}, ${longitude}, ${radiusMeters})`,
+  ].join(' AND ');
+}
+
 export function buildRecentNearbyComplaintsUrl(
   params: NearbyComplaintsParams,
   options?: { baseUrl?: string; now?: Date }
 ) {
-  const { latitude, longitude, radiusMeters, daysBack, limit = 25 } = params;
+  const { limit = 25 } = params;
   const baseUrl = options?.baseUrl ?? DEFAULT_BASE_URL;
   const now = options?.now ?? new Date();
-  const createdAfter = formatIsoDate(daysBack, now);
   const search = new URLSearchParams({
     $select: [
       'sr_number',
@@ -34,16 +47,23 @@ export function buildRecentNearbyComplaintsUrl(
       'parent_sr_number',
       'origin',
     ].join(','),
-    $where: [
-      'duplicate = false',
-      'latitude IS NOT NULL',
-      'longitude IS NOT NULL',
-      "sr_type != '311 INFORMATION ONLY CALL'",
-      `created_date >= '${createdAfter}'`,
-      `within_circle(location, ${latitude}, ${longitude}, ${radiusMeters})`,
-    ].join(' AND '),
+    $where: buildNearbyComplaintsWhereClause(params, now),
     $order: 'created_date DESC, sr_number DESC',
     $limit: String(limit),
+  });
+
+  return `${baseUrl}?${search.toString()}`;
+}
+
+export function buildRecentNearbyComplaintsCountUrl(
+  params: NearbyComplaintsParams,
+  options?: { baseUrl?: string; now?: Date }
+) {
+  const baseUrl = options?.baseUrl ?? DEFAULT_BASE_URL;
+  const now = options?.now ?? new Date();
+  const search = new URLSearchParams({
+    $select: 'count(*) as total',
+    $where: buildNearbyComplaintsWhereClause(params, now),
   });
 
   return `${baseUrl}?${search.toString()}`;

@@ -21,6 +21,7 @@ function createState(overrides?: Partial<AddressComplaintsState>): AddressCompla
         ward: '42',
       },
     ],
+    totalCount: 42,
     errorMessage: null,
     coordinates: {
       latitude: 41.881,
@@ -38,7 +39,8 @@ describe('<HomeScreenContent />', () => {
     getByText('What are neighbors complaining about?');
     getByText('Search this address');
     getByText('Pothole in Street Complaint');
-    expect(getByTestId('complaint-count').props.children).toBe(1);
+    expect(getByTestId('complaint-count').props.children).toBe('1/42');
+    getByText('First page of nearby matches');
   });
 
   test('lets the user search by address', () => {

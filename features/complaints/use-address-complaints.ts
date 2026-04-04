@@ -12,6 +12,7 @@ export type AddressComplaintsState = {
   setQuery: (value: string) => void;
   status: AddressComplaintsStatus;
   complaints: Complaint[];
+  totalCount: number | null;
   errorMessage: string | null;
   coordinates: ComplaintCoordinates | null;
   search: () => void;
@@ -27,6 +28,7 @@ export function useAddressComplaints(options?: {
   const [query, setQuery] = useState(options?.initialQuery ?? '1 E State St');
   const [status, setStatus] = useState<AddressComplaintsStatus>('idle');
   const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [coordinates, setCoordinates] = useState<ComplaintCoordinates | null>(null);
 
@@ -37,6 +39,7 @@ export function useAddressComplaints(options?: {
       setStatus('error');
       setErrorMessage('Enter a Chicago address to load nearby complaints.');
       setComplaints([]);
+      setTotalCount(null);
       return;
     }
 
@@ -47,7 +50,7 @@ export function useAddressComplaints(options?: {
       const nextCoordinates = await geocodeAddress(trimmedQuery);
       setCoordinates(nextCoordinates);
 
-      const nextComplaints = await client.getRecentNearbyComplaints({
+      const page = await client.getRecentNearbyComplaintsPage({
         latitude: nextCoordinates.latitude,
         longitude: nextCoordinates.longitude,
         radiusMeters: 800,
@@ -55,10 +58,12 @@ export function useAddressComplaints(options?: {
         limit: 25,
       });
 
-      setComplaints(nextComplaints);
-      setStatus(nextComplaints.length > 0 ? 'ready' : 'empty');
+      setComplaints(page.complaints);
+      setTotalCount(page.totalCount);
+      setStatus(page.complaints.length > 0 ? 'ready' : 'empty');
     } catch (error) {
       setComplaints([]);
+      setTotalCount(null);
       setStatus('error');
 
       if (error instanceof AddressGeocodingError) {
@@ -75,6 +80,7 @@ export function useAddressComplaints(options?: {
     setQuery,
     status,
     complaints,
+    totalCount,
     errorMessage,
     coordinates,
     search: () => {
