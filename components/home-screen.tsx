@@ -1,74 +1,195 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useWatchStore } from '@/stores/use-watch-store';
+import type { Complaint } from '@/lib/chicago311/types';
+
+import { useNearbyComplaints, type NearbyComplaintsState } from '@/features/complaints/use-nearby-complaints';
+
+function formatComplaintDate(createdAt: string) {
+  return new Date(createdAt).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function ComplaintCard({ complaint }: { complaint: Complaint }) {
+  return (
+    <View className="gap-3 rounded-3xl border border-slate-800 bg-slate-900 px-5 py-5">
+      <View className="flex-row items-start justify-between gap-4">
+        <Text className="flex-1 text-lg font-semibold text-white">{complaint.type}</Text>
+        <Text className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[2px] text-cyan-200">
+          {complaint.status}
+        </Text>
+      </View>
+
+      <Text className="text-sm leading-6 text-slate-300">
+        {complaint.address ?? 'Address unavailable'}
+      </Text>
+
+      <View className="flex-row flex-wrap gap-2">
+        {complaint.communityArea ? (
+          <Text className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">
+            Community area {complaint.communityArea}
+          </Text>
+        ) : null}
+        {complaint.ward ? (
+          <Text className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">
+            Ward {complaint.ward}
+          </Text>
+        ) : null}
+      </View>
+
+      <Text className="text-xs uppercase tracking-[2px] text-slate-500">
+        Filed {formatComplaintDate(complaint.createdAt)}
+      </Text>
+    </View>
+  );
+}
+
+function HomeScreenBody({ state }: { state: NearbyComplaintsState }) {
+  if (state.status === 'permission-denied') {
+    return (
+      <View className="gap-4 rounded-[28px] border border-amber-500/30 bg-amber-500/10 px-6 py-6">
+        <Text className="text-2xl font-semibold text-white">Use your location to dogfood this.</Text>
+        <Text className="text-base leading-6 text-slate-300">
+          The first flow stays intentionally small: recent complaints within walking distance of where
+          you are.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          className="items-center rounded-2xl bg-amber-400 px-4 py-4"
+          onPress={state.requestLocationAccess}>
+          <Text className="text-base font-semibold text-slate-950">Enable location</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (state.status === 'error') {
+    return (
+      <View className="gap-4 rounded-[28px] border border-rose-500/30 bg-rose-500/10 px-6 py-6">
+        <Text className="text-2xl font-semibold text-white">Chicago 311 did not load.</Text>
+        <Text className="text-base leading-6 text-slate-300">
+          {state.errorMessage ?? 'The public dataset is reachable anonymously, but this request failed.'}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          className="items-center rounded-2xl bg-white px-4 py-4"
+          onPress={state.refresh}>
+          <Text className="text-base font-semibold text-slate-950">Try again</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (state.status === 'loading') {
+    return (
+      <View className="gap-4 rounded-[28px] border border-slate-800 bg-slate-900 px-6 py-6">
+        <Text className="text-2xl font-semibold text-white">Loading nearby complaints...</Text>
+        <Text className="text-base leading-6 text-slate-300">
+          Fetching the last 7 days of public Chicago 311 reports near your current location.
+        </Text>
+      </View>
+    );
+  }
+
+  if (state.status === 'empty') {
+    return (
+      <View className="gap-4 rounded-[28px] border border-slate-800 bg-slate-900 px-6 py-6">
+        <Text className="text-2xl font-semibold text-white">Nothing nearby in the last 7 days.</Text>
+        <Text className="text-base leading-6 text-slate-300">
+          That may mean a quiet pocket, a sparse geocoding area, or just a good excuse to widen the
+          radius next.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          className="items-center rounded-2xl bg-cyan-400 px-4 py-4"
+          onPress={state.refresh}>
+          <Text className="text-base font-semibold text-slate-950">Refresh nearby</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <View className="gap-4">
+      {state.complaints.map((complaint) => (
+        <ComplaintCard key={complaint.id} complaint={complaint} />
+      ))}
+    </View>
+  );
+}
 
 export function HomeScreen() {
-  const activeWatchers = useWatchStore((state) => state.activeWatchers);
-  const openReports = useWatchStore((state) => state.openReports);
-  const highlightedBorough = useWatchStore((state) => state.highlightedBorough);
-  const addWatcher = useWatchStore((state) => state.addWatcher);
-  const cycleBorough = useWatchStore((state) => state.cycleBorough);
+  const state = useNearbyComplaints();
+
+  return <HomeScreenContent state={state} />;
+}
+
+export function HomeScreenContent({ state }: { state: NearbyComplaintsState }) {
+  const subtitle = state.coordinates
+    ? `Around ${state.coordinates.latitude.toFixed(3)}, ${state.coordinates.longitude.toFixed(3)}`
+    : 'Recent nearby Chicago 311 complaints';
+  const isRefreshing = state.status === 'loading' && state.complaints.length > 0;
 
   return (
     <SafeAreaView className="flex-1 bg-slate-950">
-      <View className="flex-1 gap-6 px-6 py-8">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-6 px-6 py-8"
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={state.refresh} />}>
         <View className="gap-3 rounded-[28px] border border-slate-800 bg-slate-900 px-6 py-6">
           <Text className="text-sm font-medium uppercase tracking-[3px] text-cyan-300">
             311 Watch
           </Text>
-          <Text className="text-4xl font-bold text-white">Expo starter, city-ops edition.</Text>
+          <Text className="text-4xl font-bold text-white">What are neighbors complaining about?</Text>
           <Text className="text-base leading-6 text-slate-300">
-            NativeWind is styling this screen, Zustand is powering the live counters, and the app is
-            ready for Expo-based iteration.
+            Anonymous public data, one minimal flow: use your location, pull recent complaints, and
+            see the signal before building anything heavier.
           </Text>
+          <Text className="text-sm font-medium text-slate-500">{subtitle}</Text>
         </View>
 
         <View className="flex-row gap-4">
           <View className="flex-1 rounded-3xl bg-cyan-400 px-5 py-5">
             <Text className="text-xs font-semibold uppercase tracking-[2px] text-slate-950">
-              Active watchers
+              Complaints loaded
             </Text>
-            <Text testID="watcher-count" className="mt-3 text-3xl font-bold text-slate-950">
-              {activeWatchers}
+            <Text testID="complaint-count" className="mt-3 text-3xl font-bold text-slate-950">
+              {state.complaints.length}
             </Text>
           </View>
 
-          <View className="flex-1 rounded-3xl border border-emerald-400/20 bg-emerald-500/10 px-5 py-5">
-            <Text className="text-xs font-semibold uppercase tracking-[2px] text-emerald-200">
-              Open reports
+          <View className="flex-1 rounded-3xl border border-slate-700 bg-slate-900 px-5 py-5">
+            <Text className="text-xs font-semibold uppercase tracking-[2px] text-slate-400">
+              Time window
             </Text>
-            <Text className="mt-3 text-3xl font-bold text-white">{openReports}</Text>
+            <Text className="mt-3 text-3xl font-bold text-white">7d</Text>
           </View>
         </View>
 
         <View className="gap-3 rounded-3xl border border-slate-800 bg-slate-900 px-5 py-5">
-          <Text className="text-sm font-medium text-slate-400">Current focus</Text>
-          <Text testID="borough-label" className="text-2xl font-semibold text-white">
-            {highlightedBorough}
-          </Text>
+          <Text className="text-sm font-medium text-slate-400">Default policy</Text>
+          <Text className="text-2xl font-semibold text-white">Keep it tiny and useful.</Text>
           <Text className="text-sm leading-6 text-slate-400">
-            Start with a tight surface area: one clear route, one small store, and one shared styling
-            system.
+            This feed is location-bounded, excludes duplicates, and filters out `311 INFORMATION ONLY
+            CALL` so the first dogfood pass stays readable.
           </Text>
         </View>
 
-        <View className="mt-auto gap-3">
+        <HomeScreenBody state={state} />
+
+        <View className="gap-3">
           <Pressable
             accessibilityRole="button"
             className="items-center rounded-2xl bg-cyan-400 px-4 py-4"
-            onPress={addWatcher}>
-            <Text className="text-base font-semibold text-slate-950">Add watcher</Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            className="items-center rounded-2xl border border-slate-700 bg-slate-900 px-4 py-4"
-            onPress={cycleBorough}>
-            <Text className="text-base font-semibold text-white">Rotate borough focus</Text>
+            onPress={state.refresh}>
+            <Text className="text-base font-semibold text-slate-950">Refresh nearby complaints</Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
