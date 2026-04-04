@@ -11,6 +11,7 @@ export type AddressComplaintsState = {
   query: string;
   setQuery: (value: string) => void;
   status: AddressComplaintsStatus;
+  isSearching: boolean;
   complaints: Complaint[];
   totalCount: number | null;
   errorMessage: string | null;
@@ -27,12 +28,17 @@ export function useAddressComplaints(options?: {
   const geocodeAddress = options?.geocodeAddress ?? geocodeChicagoAddress;
   const [query, setQuery] = useState(options?.initialQuery ?? '1 E State St');
   const [status, setStatus] = useState<AddressComplaintsStatus>('idle');
+  const [isSearching, setIsSearching] = useState(false);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [coordinates, setCoordinates] = useState<ComplaintCoordinates | null>(null);
 
   async function runSearch() {
+    if (isSearching) {
+      return;
+    }
+
     const trimmedQuery = query.trim();
 
     if (!trimmedQuery) {
@@ -43,6 +49,7 @@ export function useAddressComplaints(options?: {
       return;
     }
 
+    setIsSearching(true);
     setStatus('loading');
     setErrorMessage(null);
 
@@ -72,6 +79,8 @@ export function useAddressComplaints(options?: {
       }
 
       setErrorMessage(error instanceof Error ? error.message : 'Unable to load Chicago 311 data.');
+    } finally {
+      setIsSearching(false);
     }
   }
 
@@ -79,6 +88,7 @@ export function useAddressComplaints(options?: {
     query,
     setQuery,
     status,
+    isSearching,
     complaints,
     totalCount,
     errorMessage,

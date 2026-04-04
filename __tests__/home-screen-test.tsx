@@ -1,4 +1,5 @@
 import { fireEvent, render } from '@testing-library/react-native';
+import { Keyboard } from 'react-native';
 
 import { HomeScreenContent } from '@/components/home-screen';
 import type { AddressComplaintsState } from '@/features/complaints/use-address-complaints';
@@ -8,6 +9,7 @@ function createState(overrides?: Partial<AddressComplaintsState>): AddressCompla
     query: '1 E State St',
     setQuery: jest.fn(),
     status: 'ready',
+    isSearching: false,
     complaints: [
       {
         id: 'SR-100',
@@ -33,6 +35,14 @@ function createState(overrides?: Partial<AddressComplaintsState>): AddressCompla
 }
 
 describe('<HomeScreenContent />', () => {
+  beforeEach(() => {
+    jest.spyOn(Keyboard, 'dismiss').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   test('renders a tighter landing screen before search runs', () => {
     const { getByText, queryByTestId } = render(
       <HomeScreenContent
@@ -68,6 +78,23 @@ describe('<HomeScreenContent />', () => {
     fireEvent.press(getByText('Search this address'));
 
     expect(state.setQuery).toHaveBeenCalledWith('1234 W Foster Ave');
+    expect(Keyboard.dismiss).toHaveBeenCalled();
     expect(state.search).toHaveBeenCalled();
+  });
+
+  test('shows a loading button state while search is in flight', () => {
+    const state = createState({
+      status: 'loading',
+      isSearching: true,
+      complaints: [],
+      totalCount: null,
+      coordinates: null,
+    });
+
+    const { getByLabelText, getByText } = render(<HomeScreenContent state={state} />);
+
+    getByText('Searching…');
+    getByText('Search in progress. This can take a moment.');
+    getByLabelText('Searching indicator');
   });
 });

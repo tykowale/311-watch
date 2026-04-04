@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Complaint } from '@/lib/chicago311/types';
@@ -27,7 +27,7 @@ function formatLoadedCount(totalCount: number | null, loadedCount: number) {
 }
 
 function SearchSummary({ state }: { state: AddressComplaintsState }) {
-  if (state.status !== 'ready' || state.complaints.length === 0) {
+  if (state.status !== 'ready' || state.complaints.length === 0 || state.isSearching) {
     return null;
   }
 
@@ -122,6 +122,7 @@ function HomeScreenBody({ state }: { state: AddressComplaintsState }) {
           Geocoding your address, then fetching the last 7 days of public Chicago 311 reports within
           half a mile.
         </Text>
+        <Text className="text-sm font-medium text-cyan-300">Search in progress. This can take a moment.</Text>
       </View>
     );
   }
@@ -164,10 +165,19 @@ export function HomeScreenContent({ state }: { state: AddressComplaintsState }) 
     ? `Around ${state.coordinates.latitude.toFixed(3)}, ${state.coordinates.longitude.toFixed(3)}`
     : 'Search by a Chicago address';
   const hasResults = state.status === 'ready' && state.complaints.length > 0;
+  const searchButtonLabel = state.isSearching ? 'Searching…' : 'Search this address';
+
+  function submitSearch() {
+    Keyboard.dismiss();
+    state.search();
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-slate-950">
-      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 py-8">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-6 px-6 py-8"
+        keyboardShouldPersistTaps="handled">
         <View className="gap-3 rounded-[28px] bg-slate-950 px-1 py-2">
           <Text className="text-sm font-medium uppercase tracking-[3px] text-cyan-300">
             311 Watch
@@ -192,17 +202,27 @@ export function HomeScreenContent({ state }: { state: AddressComplaintsState }) 
             placeholderTextColor="#64748b"
             autoCapitalize="words"
             autoCorrect={false}
-            className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-4 text-base text-white"
+            editable={!state.isSearching}
+            className={state.isSearching
+              ? 'rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-4 text-base text-white'
+              : 'rounded-2xl border border-slate-700 bg-slate-950 px-4 py-4 text-base text-white'}
           />
           <Pressable
             accessibilityRole="button"
-            className="items-center rounded-2xl bg-cyan-400 px-4 py-4"
-            onPress={state.search}>
-            <Text className="text-base font-semibold text-slate-950">Search this address</Text>
+            accessibilityState={{ disabled: state.isSearching }}
+            className={state.isSearching ? 'flex-row items-center justify-center gap-3 rounded-2xl bg-cyan-400/70 px-4 py-4' : 'flex-row items-center justify-center gap-3 rounded-2xl bg-cyan-400 px-4 py-4'}
+            disabled={state.isSearching}
+            onPress={submitSearch}>
+            {state.isSearching ? (
+              <ActivityIndicator accessibilityLabel="Searching indicator" color="#020617" />
+            ) : null}
+            <Text className="text-base font-semibold text-slate-950">{searchButtonLabel}</Text>
           </Pressable>
           {!hasResults ? (
             <Text className="text-sm leading-6 text-slate-500">
-              Uses public Chicago 311 data from the last 7 days within half a mile of the address.
+              {state.isSearching
+                ? 'Pulling public Chicago 311 data now so you know the search is working.'
+                : 'Uses public Chicago 311 data from the last 7 days within half a mile of the address.'}
             </Text>
           ) : null}
         </View>
