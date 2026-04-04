@@ -2,14 +2,17 @@
 
 ## Overview
 
-This repository is the starting point for the `311-watch` project.
+`311-watch` is an Expo Router app for experimenting with a 311-style civic monitoring experience.
 
-## Current State
+## Stack
 
-- The repository is intentionally minimal and currently only includes the project license.
-- Application code and tooling have not been scaffolded yet.
+- Expo Router with React Native and TypeScript
+- NativeWind for utility-first styling
+- Zustand for lightweight client state
+- Jest and React Native Testing Library for unit tests
 
 ## Working Notes
 
-- Keep changes small and focused until the product structure is established.
-- Update this file as project conventions, commands, and architecture become clearer.
+- Keep the initial app surface small and easy to smoke test.
+- Prefer Expo-compatible packages and documented install paths.
+- Update this file as the app structure and conventions become more concrete.
