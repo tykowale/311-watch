@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { chicago311Client } from '@/lib/chicago311/client';
 import type { Chicago311Client, Complaint } from '@/lib/chicago311/types';
 
+import { filterComplaintsByType, summarizeComplaintTypes, type ComplaintTypeSummary } from './complaint-type-summary';
 import { AddressGeocodingError, geocodeChicagoAddress, type ComplaintCoordinates } from './geocoding';
 
 type AddressComplaintsStatus = 'idle' | 'loading' | 'ready' | 'empty' | 'error';
@@ -13,6 +14,10 @@ export type AddressComplaintsState = {
   status: AddressComplaintsStatus;
   isSearching: boolean;
   complaints: Complaint[];
+  visibleComplaints: Complaint[];
+  complaintTypeSummary: ComplaintTypeSummary[];
+  selectedComplaintType: string | null;
+  selectComplaintType: (value: string | null) => void;
   totalCount: number | null;
   errorMessage: string | null;
   coordinates: ComplaintCoordinates | null;
@@ -30,6 +35,7 @@ export function useAddressComplaints(options?: {
   const [status, setStatus] = useState<AddressComplaintsStatus>('idle');
   const [isSearching, setIsSearching] = useState(false);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [selectedComplaintType, setSelectedComplaintType] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [coordinates, setCoordinates] = useState<ComplaintCoordinates | null>(null);
@@ -52,6 +58,7 @@ export function useAddressComplaints(options?: {
     setIsSearching(true);
     setStatus('loading');
     setErrorMessage(null);
+    setSelectedComplaintType(null);
 
     try {
       const nextCoordinates = await geocodeAddress(trimmedQuery);
@@ -84,12 +91,19 @@ export function useAddressComplaints(options?: {
     }
   }
 
+  const complaintTypeSummary = summarizeComplaintTypes(complaints);
+  const visibleComplaints = filterComplaintsByType(complaints, selectedComplaintType);
+
   return {
     query,
     setQuery,
     status,
     isSearching,
     complaints,
+    visibleComplaints,
+    complaintTypeSummary,
+    selectedComplaintType,
+    selectComplaintType: setSelectedComplaintType,
     totalCount,
     errorMessage,
     coordinates,

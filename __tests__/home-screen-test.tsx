@@ -22,7 +22,48 @@ function createState(overrides?: Partial<AddressComplaintsState>): AddressCompla
         communityArea: '32',
         ward: '42',
       },
+      {
+        id: 'SR-101',
+        type: 'Street Light Out',
+        status: 'Completed',
+        createdAt: '2026-04-03T12:00:00.000Z',
+        address: '200 N STATE ST',
+        lat: 41.88,
+        lng: -87.63,
+        communityArea: '32',
+        ward: '42',
+      },
     ],
+    visibleComplaints: [
+      {
+        id: 'SR-100',
+        type: 'Pothole in Street Complaint',
+        status: 'Open',
+        createdAt: '2026-04-04T12:00:00.000Z',
+        address: '100 N STATE ST',
+        lat: 41.88,
+        lng: -87.63,
+        communityArea: '32',
+        ward: '42',
+      },
+      {
+        id: 'SR-101',
+        type: 'Street Light Out',
+        status: 'Completed',
+        createdAt: '2026-04-03T12:00:00.000Z',
+        address: '200 N STATE ST',
+        lat: 41.88,
+        lng: -87.63,
+        communityArea: '32',
+        ward: '42',
+      },
+    ],
+    complaintTypeSummary: [
+      { type: 'Pothole in Street Complaint', count: 1 },
+      { type: 'Street Light Out', count: 1 },
+    ],
+    selectedComplaintType: null,
+    selectComplaintType: jest.fn(),
     totalCount: 42,
     errorMessage: null,
     coordinates: {
@@ -61,7 +102,10 @@ describe('<HomeScreenContent />', () => {
     getByText('What are neighbors complaining about?');
     getByText('Search complaints around an address you know.');
     getByText('Pothole in Street Complaint');
-    expect(getByTestId('complaint-count').props.children).toBe('1/42');
+    getByText('Top complaint types nearby');
+    getByText('All');
+    getByText('Street Light Out (1)');
+    expect(getByTestId('complaint-count').props.children).toBe('2/42');
     getByText('First page of nearby matches');
   });
 
@@ -96,5 +140,14 @@ describe('<HomeScreenContent />', () => {
     getByText('Searching…');
     getByText('Search in progress. This can take a moment.');
     getByLabelText('Searching indicator');
+  });
+
+  test('lets the user pick a complaint-type chip', () => {
+    const state = createState();
+    const { getByText } = render(<HomeScreenContent state={state} />);
+
+    fireEvent.press(getByText('Street Light Out (1)'));
+
+    expect(state.selectComplaintType).toHaveBeenCalledWith('Street Light Out');
   });
 });

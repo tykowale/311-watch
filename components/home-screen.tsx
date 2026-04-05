@@ -50,6 +50,48 @@ function SearchSummary({ state }: { state: AddressComplaintsState }) {
   );
 }
 
+function ComplaintTypeChips({ state }: { state: AddressComplaintsState }) {
+  if (state.status !== 'ready' || state.complaintTypeSummary.length === 0 || state.isSearching) {
+    return null;
+  }
+
+  return (
+    <View className="gap-3 rounded-[28px] border border-slate-800 bg-slate-900 px-5 py-5">
+      <Text className="text-sm font-medium text-slate-400">Top complaint types nearby</Text>
+      <View className="flex-row flex-wrap gap-3">
+        <Pressable
+          accessibilityRole="button"
+          className={state.selectedComplaintType === null
+            ? 'rounded-full bg-cyan-400 px-4 py-2'
+            : 'rounded-full border border-slate-700 bg-slate-950 px-4 py-2'}
+          onPress={() => state.selectComplaintType(null)}>
+          <Text className={state.selectedComplaintType === null ? 'text-sm font-semibold text-slate-950' : 'text-sm font-semibold text-white'}>
+            All
+          </Text>
+        </Pressable>
+
+        {state.complaintTypeSummary.map((item) => {
+          const isSelected = state.selectedComplaintType === item.type;
+
+          return (
+            <Pressable
+              key={item.type}
+              accessibilityRole="button"
+              className={isSelected
+                ? 'rounded-full bg-cyan-400 px-4 py-2'
+                : 'rounded-full border border-slate-700 bg-slate-950 px-4 py-2'}
+              onPress={() => state.selectComplaintType(item.type)}>
+              <Text className={isSelected ? 'text-sm font-semibold text-slate-950' : 'text-sm font-semibold text-white'}>
+                {item.type} ({item.count})
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function ComplaintCard({ complaint }: { complaint: Complaint }) {
   return (
     <View className="gap-3 rounded-3xl border border-slate-800 bg-slate-900 px-5 py-5">
@@ -147,7 +189,7 @@ function HomeScreenBody({ state }: { state: AddressComplaintsState }) {
 
   return (
     <View className="gap-4">
-      {state.complaints.map((complaint) => (
+      {state.visibleComplaints.map((complaint) => (
         <ComplaintCard key={complaint.id} complaint={complaint} />
       ))}
     </View>
@@ -228,6 +270,7 @@ export function HomeScreenContent({ state }: { state: AddressComplaintsState }) 
         </View>
 
         <SearchSummary state={state} />
+        <ComplaintTypeChips state={state} />
 
         <HomeScreenBody state={state} />
       </ScrollView>
