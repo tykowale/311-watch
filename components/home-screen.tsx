@@ -218,7 +218,9 @@ function HomeScreenBody({ state }: { state: AddressComplaintsState }) {
     return (
       <View className="gap-4">
         <View className="gap-2 rounded-[28px] border border-slate-800 bg-slate-900 px-5 py-5">
-          <Text className="text-xl font-semibold text-white">{state.selectedComplaintType} addresses</Text>
+          <Text className="text-xl font-semibold text-white">
+            {formatComplaintTypeLabel(state.selectedComplaintType)} addresses
+          </Text>
           <Text className="text-sm leading-6 text-slate-400">
             Focused view for where this issue is showing up in the current result set.
           </Text>
