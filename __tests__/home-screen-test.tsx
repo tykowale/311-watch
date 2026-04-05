@@ -150,4 +150,30 @@ describe('<HomeScreenContent />', () => {
 
     expect(state.selectComplaintType).toHaveBeenCalledWith('Street Light Out');
   });
+
+  test('shows a compact address-first view when a complaint type is selected', () => {
+    const state = createState({
+      selectedComplaintType: 'Street Light Out',
+      visibleComplaints: [
+        {
+          id: 'SR-101',
+          type: 'Street Light Out',
+          status: 'Completed',
+          createdAt: '2026-04-03T12:00:00.000Z',
+          address: '200 N STATE ST',
+          lat: 41.88,
+          lng: -87.63,
+          communityArea: '32',
+          ward: '42',
+        },
+      ],
+    });
+
+    const { getByText, queryByText } = render(<HomeScreenContent state={state} />);
+
+    getByText('Street Light Out addresses');
+    getByText('200 N STATE ST');
+    getByText('Completed');
+    expect(queryByText('Pothole in Street Complaint')).toBeNull();
+  });
 });

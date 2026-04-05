@@ -14,6 +14,13 @@ function formatComplaintDate(createdAt: string) {
   });
 }
 
+function formatCompactDate(createdAt: string) {
+  return new Date(createdAt).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 function formatLoadedCount(totalCount: number | null, loadedCount: number) {
   if (totalCount === null) {
     return String(loadedCount);
@@ -126,6 +133,20 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
   );
 }
 
+function CompactComplaintRow({ complaint }: { complaint: Complaint }) {
+  return (
+    <View className="flex-row items-center justify-between gap-4 rounded-3xl border border-slate-800 bg-slate-900 px-5 py-4">
+      <View className="flex-1 gap-1">
+        <Text className="text-base font-semibold text-white">{complaint.address ?? 'Address unavailable'}</Text>
+        <Text className="text-sm text-slate-400">Filed {formatCompactDate(complaint.createdAt)}</Text>
+      </View>
+      <Text className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[2px] text-cyan-200">
+        {complaint.status}
+      </Text>
+    </View>
+  );
+}
+
 function HomeScreenBody({ state }: { state: AddressComplaintsState }) {
   if (state.status === 'idle') {
     return (
@@ -183,6 +204,23 @@ function HomeScreenBody({ state }: { state: AddressComplaintsState }) {
           onPress={state.search}>
           <Text className="text-base font-semibold text-slate-950">Try another search</Text>
         </Pressable>
+      </View>
+    );
+  }
+
+  if (state.selectedComplaintType) {
+    return (
+      <View className="gap-4">
+        <View className="gap-2 rounded-[28px] border border-slate-800 bg-slate-900 px-5 py-5">
+          <Text className="text-xl font-semibold text-white">{state.selectedComplaintType} addresses</Text>
+          <Text className="text-sm leading-6 text-slate-400">
+            Focused view for where this issue is showing up in the current result set.
+          </Text>
+        </View>
+
+        {state.visibleComplaints.map((complaint) => (
+          <CompactComplaintRow key={complaint.id} complaint={complaint} />
+        ))}
       </View>
     );
   }
