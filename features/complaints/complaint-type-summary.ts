@@ -5,6 +5,18 @@ export type ComplaintTypeSummary = {
   count: number;
 };
 
+export function shouldShowComplaintTypeSummary(complaints: Complaint[]) {
+  return complaints.length >= 3;
+}
+
+export function formatComplaintTypeLabel(type: string) {
+  return type
+    .replace(/\s+Complaint$/i, '')
+    .replace(/\s+Request$/i, '')
+    .replace(/\s+Complaints$/i, '')
+    .trim();
+}
+
 export function summarizeComplaintTypes(
   complaints: Complaint[],
   options?: { limit?: number }

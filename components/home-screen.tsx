@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Complaint } from '@/lib/chicago311/types';
 
+import { formatComplaintTypeLabel, shouldShowComplaintTypeSummary } from '@/features/complaints/complaint-type-summary';
 import { useAddressComplaints, type AddressComplaintsState } from '@/features/complaints/use-address-complaints';
 
 function formatComplaintDate(createdAt: string) {
@@ -58,7 +59,12 @@ function SearchSummary({ state }: { state: AddressComplaintsState }) {
 }
 
 function ComplaintTypeChips({ state }: { state: AddressComplaintsState }) {
-  if (state.status !== 'ready' || state.complaintTypeSummary.length === 0 || state.isSearching) {
+  if (
+    state.status !== 'ready' ||
+    state.complaintTypeSummary.length === 0 ||
+    state.isSearching ||
+    !shouldShowComplaintTypeSummary(state.complaints)
+  ) {
     return null;
   }
 
@@ -89,7 +95,7 @@ function ComplaintTypeChips({ state }: { state: AddressComplaintsState }) {
                 : 'rounded-full border border-slate-700 bg-slate-950 px-4 py-2'}
               onPress={() => state.selectComplaintType(item.type)}>
               <Text className={isSelected ? 'text-sm font-semibold text-slate-950' : 'text-sm font-semibold text-white'}>
-                {item.type} ({item.count})
+                {formatComplaintTypeLabel(item.type)} ({item.count})
               </Text>
             </Pressable>
           );

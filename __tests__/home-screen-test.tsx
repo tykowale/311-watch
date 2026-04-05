@@ -33,6 +33,17 @@ function createState(overrides?: Partial<AddressComplaintsState>): AddressCompla
         communityArea: '32',
         ward: '42',
       },
+      {
+        id: 'SR-102',
+        type: 'Pothole in Street Complaint',
+        status: 'Open',
+        createdAt: '2026-04-02T12:00:00.000Z',
+        address: '300 N STATE ST',
+        lat: 41.88,
+        lng: -87.63,
+        communityArea: '32',
+        ward: '42',
+      },
     ],
     visibleComplaints: [
       {
@@ -57,9 +68,20 @@ function createState(overrides?: Partial<AddressComplaintsState>): AddressCompla
         communityArea: '32',
         ward: '42',
       },
+      {
+        id: 'SR-102',
+        type: 'Pothole in Street Complaint',
+        status: 'Open',
+        createdAt: '2026-04-02T12:00:00.000Z',
+        address: '300 N STATE ST',
+        lat: 41.88,
+        lng: -87.63,
+        communityArea: '32',
+        ward: '42',
+      },
     ],
     complaintTypeSummary: [
-      { type: 'Pothole in Street Complaint', count: 1 },
+      { type: 'Pothole in Street Complaint', count: 2 },
       { type: 'Street Light Out', count: 1 },
     ],
     selectedComplaintType: null,
@@ -101,11 +123,12 @@ describe('<HomeScreenContent />', () => {
 
     getByText('What are neighbors complaining about?');
     getByText('Search complaints around an address you know.');
-    getByText('Pothole in Street Complaint');
+    getByText('300 N STATE ST');
     getByText('Top complaint types nearby');
     getByText('All');
+    getByText('Pothole in Street (2)');
     getByText('Street Light Out (1)');
-    expect(getByTestId('complaint-count').props.children).toBe('2/42');
+    expect(getByTestId('complaint-count').props.children).toBe('3/42');
     getByText('First page of nearby matches');
   });
 
@@ -149,6 +172,21 @@ describe('<HomeScreenContent />', () => {
     fireEvent.press(getByText('Street Light Out (1)'));
 
     expect(state.selectComplaintType).toHaveBeenCalledWith('Street Light Out');
+  });
+
+  test('hides the complaint summary when results are too sparse', () => {
+    const sparseState = createState({
+      complaints: [createState().complaints[0], createState().complaints[1]],
+      visibleComplaints: [createState().visibleComplaints[0], createState().visibleComplaints[1]],
+      complaintTypeSummary: [
+        { type: 'Pothole in Street Complaint', count: 1 },
+        { type: 'Street Light Out', count: 1 },
+      ],
+    });
+
+    const { queryByText } = render(<HomeScreenContent state={sparseState} />);
+
+    expect(queryByText('Top complaint types nearby')).toBeNull();
   });
 
   test('shows a compact address-first view when a complaint type is selected', () => {

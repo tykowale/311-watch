@@ -1,4 +1,9 @@
-import { filterComplaintsByType, summarizeComplaintTypes } from '@/features/complaints/complaint-type-summary';
+import {
+  filterComplaintsByType,
+  formatComplaintTypeLabel,
+  shouldShowComplaintTypeSummary,
+  summarizeComplaintTypes,
+} from '@/features/complaints/complaint-type-summary';
 
 const complaints = [
   {
@@ -47,5 +52,16 @@ describe('complaint type summary', () => {
   test('filters the current result set by selected type', () => {
     expect(filterComplaintsByType(complaints, 'Street Light Out')).toEqual([complaints[1]]);
     expect(filterComplaintsByType(complaints, null)).toEqual(complaints);
+  });
+
+  test('shows complaint type summary only when there is enough signal', () => {
+    expect(shouldShowComplaintTypeSummary(complaints)).toBe(true);
+    expect(shouldShowComplaintTypeSummary([complaints[0], complaints[1]])).toBe(false);
+  });
+
+  test('cleans up chip labels without inventing a taxonomy', () => {
+    expect(formatComplaintTypeLabel('Pothole in Street Complaint')).toBe('Pothole in Street');
+    expect(formatComplaintTypeLabel('Tree Debris Clean-Up Request')).toBe('Tree Debris Clean-Up');
+    expect(formatComplaintTypeLabel('Street Light Out')).toBe('Street Light Out');
   });
 });
